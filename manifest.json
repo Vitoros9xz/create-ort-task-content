@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "Content Copier",
+  "version": "1.0",
+  "description": "Copy content from webpage using class selectors",
+  "permissions": ["activeTab", "clipboardWrite"],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"]
+    }
+  ]
+}
