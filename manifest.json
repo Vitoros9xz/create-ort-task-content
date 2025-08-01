@@ -1,15 +1,17 @@
 {
   "manifest_version": 3,
   "name": "Create ORT Task",
-  "version": "1.0",
+  "version": "1.1.2",
   "description": "Create ORT Task",
   "permissions": ["activeTab", "clipboardWrite"],
-  "action": {
-    "default_popup": "popup.html"
-  },
+  "host_permissions": [
+    "https://github.com/openreachtech/tecoking-frontend-customer/pull/*"
+  ],
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
+      "matches": [
+        "https://github.com/openreachtech/tecoking-frontend-customer/pull/*"
+      ],
       "js": ["content.js"]
     }
   ]
