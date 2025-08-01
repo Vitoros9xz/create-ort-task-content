@@ -1,20 +1,9 @@
 const domain = window.location.hostname;
+const isGitHub = domain === "github.com";
+const isPullRequest = window.location.pathname.includes("/pull/");
 
-const buttonLabel = 'Create ORT Task';
-const timeout = 1200;
-
-const btnStyle = {
-  padding: '8px 16px',
-  background: '#1976d2',
-  color: '#fff',
-  border: 'none',
-  borderRadius: '4px',
-  cursor: 'pointer',
-  boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
-  position: 'fixed',
-  bottom: '20px',
-  right: '20px',
-  zIndex: 9999,
+if (!isGitHub || !isPullRequest) {
+  return;
 }
 
 const contents = {
@@ -24,12 +13,6 @@ const contents = {
 };
 
 const generateTask = async () => {
-  if (domain !== "github.com") {
-    alert("This script only works on GitHub.");
-
-    return;
-  }
-
   const template = `
 [Project] ${contents.projectName}
 [Task] ${contents.taskName}
@@ -64,18 +47,27 @@ function getTaskName() {
 }
 
 const btn = document.createElement('button');
-btn.textContent = buttonLabel;
-Object.assign(btn.style, btnStyle);
-
+btn.textContent = 'Copy Link';
+btn.style.position = 'fixed';
+btn.style.bottom = '20px';
+btn.style.right = '20px';
+btn.style.zIndex = 9999;
+btn.style.padding = '8px 16px';
+btn.style.background = '#1976d2';
+btn.style.color = '#fff';
+btn.style.border = 'none';
+btn.style.borderRadius = '4px';
+btn.style.cursor = 'pointer';
+btn.style.boxShadow = '0 2px 6px rgba(0,0,0,0.2)';
 
 btn.onclick = async function () {
   try {
     await generateTask();
     btn.textContent = 'Copied!';
-    setTimeout(() => btn.textContent = buttonLabel, timeout);
+    setTimeout(() => btn.textContent = 'Copy Link', 1200);
   } catch (error) {
     btn.textContent = 'Error!';
-    setTimeout(() => btn.textContent = buttonLabel, timeout);
+    setTimeout(() => btn.textContent = 'Copy Link', 1200);
   }
 };
 
