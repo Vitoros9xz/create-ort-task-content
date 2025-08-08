@@ -1,4 +1,6 @@
 const domain = window.location.hostname;
+const buttonLabel = 'Create ORT Task';
+const timeout = 1200;
 
 const contents = {
   projectName: getProjectName(),
@@ -46,30 +48,30 @@ function getTaskName() {
   return content
 }
 
+const btnStyle = {
+  padding: '8px 16px',
+  background: '#1976d2',
+  color: '#fff',
+  border: 'none',
+  borderRadius: '4px',
+  cursor: 'pointer',
+  boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
+}
+
 const btn = document.createElement('button');
-btn.textContent = 'Copy Link';
-btn.style.position = 'fixed';
-btn.style.bottom = '20px';
-btn.style.right = '20px';
-btn.style.zIndex = 9999;
-btn.style.padding = '8px 16px';
-btn.style.background = '#1976d2';
-btn.style.color = '#fff';
-btn.style.border = 'none';
-btn.style.borderRadius = '4px';
-btn.style.cursor = 'pointer';
-btn.style.boxShadow = '0 2px 6px rgba(0,0,0,0.2)';
+btn.textContent = buttonLabel;
+Object.assign(btn.style, btnStyle);
 
 btn.onclick = async function () {
   try {
     await generateTask();
     btn.textContent = 'Copied!';
-    setTimeout(() => btn.textContent = 'Copy Link', 1200);
+    setTimeout(() => btn.textContent = buttonLabel, timeout);
   } catch (error) {
     btn.textContent = 'Error!';
-    setTimeout(() => btn.textContent = 'Copy Link', 1200);
+    setTimeout(() => btn.textContent = buttonLabel, timeout);
   }
 };
 
-document.body.appendChild(btn);
+document.querySelector('.gh-header-actions').prepend(btn);
 
