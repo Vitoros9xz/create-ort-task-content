@@ -48,30 +48,56 @@ function getTaskName() {
   return content
 }
 
-const btnStyle = {
-  padding: '8px 16px',
-  background: '#1976d2',
-  color: '#fff',
-  border: 'none',
-  borderRadius: '4px',
-  cursor: 'pointer',
-  boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
+async function getButtonHtml() {
+  try {
+    const htmlUrl = chrome.runtime.getURL("button.html");
+    const htmlText = await fetch(htmlUrl).then(res => res.text());
+
+    return htmlText;
+  } catch (error) {
+    console.error(error);
+  }
 }
 
-const btn = document.createElement('button');
-btn.textContent = buttonLabel;
-Object.assign(btn.style, btnStyle);
-
-btn.onclick = async function () {
+async function getButtonStyle() {
   try {
-    await generateTask();
-    btn.textContent = 'Copied!';
-    setTimeout(() => btn.textContent = buttonLabel, timeout);
+    const cssUrl = chrome.runtime.getURL("button.css");
+    const cssText = await fetch(cssUrl).then(res => res.text());
+
+    return cssText;
   } catch (error) {
-    btn.textContent = 'Error!';
-    setTimeout(() => btn.textContent = buttonLabel, timeout);
+    console.error(error);
   }
-};
+}
 
-document.querySelector('.gh-header-actions').prepend(btn);
+async function injectButton() {
+  try {
+    const html = await getButtonHtml();
+    const style = await getButtonStyle();
 
+    const styleEl = document.createElement("style");
+    styleEl.textContent = style;
+    document.head.appendChild(styleEl);
+
+    const wrapper = document.createElement("div");
+    wrapper.innerHTML = html;
+    document.querySelector('.gh-header-actions').prepend(wrapper);
+  } catch (error) {
+    console.error(error);
+  }
+
+  const btn = document.querySelector('#create-ort-task-btn');
+
+  btn.onclick = async function () {
+    try {
+      await generateTask();
+      btn.textContent = 'Copied!';
+      setTimeout(() => btn.textContent = buttonLabel, timeout);
+    } catch (error) {
+      btn.textContent = 'Error!';
+      setTimeout(() => btn.textContent = buttonLabel, timeout);
+    }
+  };
+}
+
+injectButton();
