@@ -1,75 +1,104 @@
-const domain = window.location.hostname;
-const isGitHub = domain === "github.com";
-const isPullRequest = window.location.pathname.includes("/pull/");
+(function() {
+    const domain = window.location.hostname;
+    const isGitHub = domain === "github.com";
+    const isPullRequest = window.location.pathname.includes("/pull/");
 
-if (!isGitHub || !isPullRequest) {
-  return;
-}
+    if (!isGitHub || !isPullRequest) {
+        return;
+    }
 
-const contents = {
-  projectName: getProjectName(),
-  taskName: getTaskName(),
-  url: window.location.href,
-};
+    function getCleanPullRequestUrl() {
+        const prUrlMatch = window.location.href.match(/(.*\/pull\/\d+)/);
+        return prUrlMatch ? prUrlMatch[0] : window.location.href;
+    }
 
-const generateTask = async () => {
-  const template = `
+    const contents = {
+        projectName: getProjectName(),
+        taskName: getTaskName(),
+        url: getCleanPullRequestUrl(),
+    };
+
+    const generateTask = async () => {
+        const template = `
 [Project] ${contents.projectName}
 [Task] ${contents.taskName}
 [Assignee] @ort-frontend
 [Reference] ${contents.url}
   `;
 
-  await navigator.clipboard.writeText(template.trim());
-}
+        await navigator.clipboard.writeText(template.trim());
+    }
 
-function getProjectName() {
-  const selectors =
-    "context-region-crumb:nth-of-type(2) .AppHeader-context-item-label";
-  const el = document.querySelector(selectors);
+    function getProjectName() {
+        const selectors =
+            "context-region-crumb:nth-of-type(2) .AppHeader-context-item-label";
+        const el = document.querySelector(selectors);
 
-  const content = el?.textContent.trim() ?? "";
+        const content = el?.textContent.trim() ?? "";
 
-  const formatContent = content
-    .split("-")
-    .map((item) => item.charAt(0).toUpperCase() + item.slice(1).trim())
-    .join(" ");
+        const formatContent = content
+            .split("-")
+            .map((item) => item.charAt(0).toUpperCase() + item.slice(1).trim())
+            .join(" ");
 
-  return formatContent
-}
+        return formatContent
+    }
 
-function getTaskName() {
-  const el = document.querySelector(".markdown-title");
+    function getTaskName() {
+        const el = document.querySelector(".markdown-title");
 
-  const content = el?.textContent.trim() ?? "";
+        const content = el?.textContent.trim() ?? "";
 
-  return content
-}
+        return content
+    }
 
-const btn = document.createElement('button');
-btn.textContent = 'Copy Link';
-btn.style.position = 'fixed';
-btn.style.bottom = '20px';
-btn.style.right = '20px';
-btn.style.zIndex = 9999;
-btn.style.padding = '8px 16px';
-btn.style.background = '#1976d2';
-btn.style.color = '#fff';
-btn.style.border = 'none';
-btn.style.borderRadius = '4px';
-btn.style.cursor = 'pointer';
-btn.style.boxShadow = '0 2px 6px rgba(0,0,0,0.2)';
+    function placeButton() {
+        const headerActions = document.querySelector('.gh-header-actions');
+        if (!headerActions) {
+            // If the header is not found, try again after a short delay
+            setTimeout(placeButton, 500);
+            return;
+        }
+        
+        // Check if the button already exists
+        if (document.getElementById('copy-task-btn')) {
+            return;
+        }
 
-btn.onclick = async function () {
-  try {
-    await generateTask();
-    btn.textContent = 'Copied!';
-    setTimeout(() => btn.textContent = 'Copy Link', 1200);
-  } catch (error) {
-    btn.textContent = 'Error!';
-    setTimeout(() => btn.textContent = 'Copy Link', 1200);
-  }
-};
+        const btn = document.createElement('button');
+        btn.id = 'copy-task-btn';
+        btn.textContent = 'Generate ORT Report';
+        btn.classList.add('Button', 'Button--primary', 'Button--small');
+        btn.style.marginLeft = '8px';
 
-document.body.appendChild(btn);
+        btn.onclick = async function () {
+            try {
+                contents.url = getCleanPullRequestUrl();
+                await generateTask();
+                btn.textContent = 'Copied!';
+                setTimeout(() => btn.textContent = 'Generate ORT Report', 1200);
+            } catch (error) {
+                btn.textContent = 'Error!';
+                setTimeout(() => btn.textContent = 'Generate ORT Report', 1200);
+            }
+        };
 
+        headerActions.appendChild(btn);
+    }
+
+    // GitHub sometimes loads content dynamically, so we need to be robust.
+    // We'll observe for changes in the body and place the button when the header is available.
+    const observer = new MutationObserver((mutations, obs) => {
+        const headerActions = document.querySelector('.gh-header-actions');
+        if (headerActions) {
+            placeButton();
+            obs.disconnect(); // Stop observing once the button is placed.
+        }
+    });
+
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
+
+})();
