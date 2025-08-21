@@ -1,104 +1,154 @@
 (function() {
-    const domain = window.location.hostname;
-    const isGitHub = domain === "github.com";
-    const isPullRequest = window.location.pathname.includes("/pull/");
+    'use strict';
 
-    if (!isGitHub || !isPullRequest) {
-        return;
-    }
+    // --- Constants ---
+    const GITHUB_DOMAIN = 'github.com';
+    const PULL_REQUEST_PATH_IDENTIFIER = '/pull/';
+    const PROJECT_NAME_SELECTOR = 'context-region-crumb:nth-of-type(2) .AppHeader-context-item-label';
+    const TASK_NAME_SELECTOR = '.markdown-title';
+    const HEADER_ACTIONS_SELECTOR = '.gh-header-actions';
+    const BUTTON_ID = 'ort-copy-task-btn';
+    const BUTTON_CLASS_LIST = ['Button', 'Button--primary', 'Button--small'];
+    const BUTTON_TEXT = 'Generate ORT Report';
+    const BUTTON_TEXT_SUCCESS = 'Copied!';
+    const BUTTON_TEXT_ERROR = 'Error!';
+    const SUCCESS_DISPLAY_DURATION_MS = 1200;
 
+    // --- Utility Functions ---
+
+    /**
+     * Extracts the base URL of the pull request, removing any extra path segments.
+     * @returns {string} The clean pull request URL.
+     */
     function getCleanPullRequestUrl() {
         const prUrlMatch = window.location.href.match(/(.*\/pull\/\d+)/);
         return prUrlMatch ? prUrlMatch[0] : window.location.href;
     }
 
-    const contents = {
-        projectName: getProjectName(),
-        taskName: getTaskName(),
-        url: getCleanPullRequestUrl(),
-    };
-
-    const generateTask = async () => {
-        const template = `
-[Project] ${contents.projectName}
-[Task] ${contents.taskName}
-[Assignee] @ort-frontend
-[Reference] ${contents.url}
-  `;
-
-        await navigator.clipboard.writeText(template.trim());
-    }
-
+    /**
+     * Fetches the project name from the page header.
+     * @returns {string} The formatted project name.
+     */
     function getProjectName() {
-        const selectors =
-            "context-region-crumb:nth-of-type(2) .AppHeader-context-item-label";
-        const el = document.querySelector(selectors);
-
-        const content = el?.textContent.trim() ?? "";
-
-        const formatContent = content
-            .split("-")
-            .map((item) => item.charAt(0).toUpperCase() + item.slice(1).trim())
-            .join(" ");
-
-        return formatContent
-    }
-
-    function getTaskName() {
-        const el = document.querySelector(".markdown-title");
-
-        const content = el?.textContent.trim() ?? "";
-
+        const el = document.querySelector(PROJECT_NAME_SELECTOR);
+        const content = el?.textContent.trim() ?? '';
+        // Format from "project-name" to "Project Name"
         return content
+            .split('-')
+            .map(item => item.charAt(0).toUpperCase() + item.slice(1).trim())
+            .join(' ');
     }
 
-    function placeButton() {
-        const headerActions = document.querySelector('.gh-header-actions');
-        if (!headerActions) {
-            // If the header is not found, try again after a short delay
-            setTimeout(placeButton, 500);
-            return;
-        }
-        
-        // Check if the button already exists
-        if (document.getElementById('copy-task-btn')) {
-            return;
-        }
+    /**
+     * Fetches the task/pull request title from the page.
+     * @returns {string} The task name.
+     */
+    function getTaskName() {
+        const el = document.querySelector(TASK_NAME_SELECTOR);
+        return el?.textContent.trim() ?? '';
+    }
 
+    /**
+     * Creates the task message string based on a template.
+     * @param {object} prData - The pull request data.
+     * @param {string} prData.projectName - The name of the project.
+     * @param {string} prData.taskName - The name of the task/PR.
+     * @param {string} prData.url - The URL of the PR.
+     * @returns {string} The formatted task message.
+     */
+    function createTaskMessage(prData) {
+        return `
+[Project] ${prData.projectName}
+[Task] ${prData.taskName}
+[Assignee] @ort-frontend
+[Reference] ${prData.url}
+  `.trim();
+    }
+
+    /**
+     * Handles the click event on the copy button.
+     * @param {MouseEvent} event - The click event.
+     */
+    async function handleCopyClick(event) {
+        const button = event.currentTarget;
+        try {
+            const prData = {
+                projectName: getProjectName(),
+                taskName: getTaskName(),
+                url: getCleanPullRequestUrl(),
+            };
+            const taskMessage = createTaskMessage(prData);
+            await navigator.clipboard.writeText(taskMessage);
+
+            button.textContent = BUTTON_TEXT_SUCCESS;
+        } catch (error) {
+            console.error('Failed to copy task report:', error);
+            button.textContent = BUTTON_TEXT_ERROR;
+        } finally {
+            setTimeout(() => {
+                button.textContent = BUTTON_TEXT;
+            }, SUCCESS_DISPLAY_DURATION_MS);
+        }
+    }
+
+    /**
+     * Creates and returns the "Generate ORT Report" button.
+     * @returns {HTMLButtonElement} The created button element.
+     */
+    function createCopyButton() {
         const btn = document.createElement('button');
-        btn.id = 'copy-task-btn';
-        btn.textContent = 'Generate ORT Report';
-        btn.classList.add('Button', 'Button--primary', 'Button--small');
+        btn.id = BUTTON_ID;
+        btn.textContent = BUTTON_TEXT;
+        btn.classList.add(...BUTTON_CLASS_LIST);
         btn.style.marginLeft = '8px';
-
-        btn.onclick = async function () {
-            try {
-                contents.url = getCleanPullRequestUrl();
-                await generateTask();
-                btn.textContent = 'Copied!';
-                setTimeout(() => btn.textContent = 'Generate ORT Report', 1200);
-            } catch (error) {
-                btn.textContent = 'Error!';
-                setTimeout(() => btn.textContent = 'Generate ORT Report', 1200);
-            }
-        };
-
-        headerActions.appendChild(btn);
+        btn.onclick = handleCopyClick;
+        return btn;
     }
 
-    // GitHub sometimes loads content dynamically, so we need to be robust.
-    // We'll observe for changes in the body and place the button when the header is available.
-    const observer = new MutationObserver((mutations, obs) => {
-        const headerActions = document.querySelector('.gh-header-actions');
-        if (headerActions) {
-            placeButton();
-            obs.disconnect(); // Stop observing once the button is placed.
-        }
-    });
+    /**
+     * Finds the header actions container and injects the copy button if it doesn't exist.
+     * This function is idempotent and safe to call multiple times.
+     */
+    function addCopyButtonToPage() {
+        const isGitHub = window.location.hostname === GITHUB_DOMAIN;
+        const isPullRequest = window.location.pathname.includes(PULL_REQUEST_PATH_IDENTIFIER);
 
-    observer.observe(document.body, {
-        childList: true,
-        subtree: true
-    });
+        if (!isGitHub || !isPullRequest) {
+            return;
+        }
+
+        const headerActions = document.querySelector(HEADER_ACTIONS_SELECTOR);
+        if (!headerActions || document.getElementById(BUTTON_ID)) {
+            return;
+        }
+
+        const button = createCopyButton();
+        headerActions.appendChild(button);
+    }
+
+
+    // --- Main Execution ---
+
+    /**
+     * Initializes the script. It attempts to add the button immediately
+     * and sets up a MutationObserver to handle dynamic page loads (like soft navigation).
+     */
+    function init() {
+        // Attempt to add the button on initial page load.
+        addCopyButtonToPage();
+
+        // Observe for DOM changes to handle cases where the header is loaded dynamically,
+        // which is common in single-page applications like GitHub.
+        const observer = new MutationObserver(() => {
+            addCopyButtonToPage();
+        });
+
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+    }
+
+    init();
 
 })();

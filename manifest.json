@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Create ORT Task",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "author": "Vitoros-ORT",
   "description": "Create ORT Task",
   "permissions": ["activeTab", "clipboardWrite"],
