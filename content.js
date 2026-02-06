@@ -6,7 +6,7 @@
     const PULL_REQUEST_PATH_IDENTIFIER = '/pull/';
     const PROJECT_NAME_SELECTOR = 'context-region-crumb:nth-of-type(2) .AppHeader-context-item-label';
     const TASK_NAME_SELECTOR = '.markdown-title';
-    const HEADER_ACTIONS_SELECTOR = '.gh-header-actions';
+    const HEADER_ACTIONS_SELECTOR = '[data-component="PH_Actions"]';
     const BUTTON_ID = 'ort-copy-task-btn';
     const BUTTON_CLASS_LIST = ['Button', 'Button--primary', 'Button--small'];
     const BUTTON_TEXT = 'Generate ORT Report';
@@ -100,7 +100,7 @@
         btn.id = BUTTON_ID;
         btn.textContent = BUTTON_TEXT;
         btn.classList.add(...BUTTON_CLASS_LIST);
-        btn.style.marginLeft = '8px';
+        btn.style.marginRight = '4px';
         btn.onclick = handleCopyClick;
         return btn;
     }
@@ -123,7 +123,7 @@
         }
 
         const button = createCopyButton();
-        headerActions.appendChild(button);
+        headerActions.prepend(button);
     }
 
 
