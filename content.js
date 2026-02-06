@@ -26,14 +26,22 @@
     }
 
     /**
-     * Fetches the project name from the page header.
+     * Fetches the project name from the URL.
+     * Extracts the project name from the URL pattern: openreachtech/{project-name}/pull
      * @returns {string} The formatted project name.
      */
     function getProjectName() {
-        const el = document.querySelector(PROJECT_NAME_SELECTOR);
-        const content = el?.textContent.trim() ?? '';
+        const url = window.location.href;
+        const match = url.match(/openreachtech\/([^\/]+)\/pull/);
+        
+        if (!match || !match[1]) {
+            console.warn('Could not extract project name from URL:', url);
+            return 'Unknown Project';
+        }
+        
+        const projectName = match[1];
         // Format from "project-name" to "Project Name"
-        return content
+        return projectName
             .split('-')
             .map(item => item.charAt(0).toUpperCase() + item.slice(1).trim())
             .join(' ');
